@@ -15,7 +15,63 @@ Welcome to the **MERN E-Commerce Website**! This project is a feature-rich e-com
 ### ⚙️ Admin Dashboard:
 
 - **🛠️ Product Management**: Add, update, or delete products with a user-friendly interface.
-- **📂 Category Management**: Organize products into categories for better navigation.
+- **📂 Category Management**: Organize # 🛒 MERN E-Commerce Website (Work in Progress)
+
+Welcome to the **MERN E-Commerce Website** project!  
+This is a full-stack e-commerce application built using the **MERN stack** — combining powerful backend services with modern, responsive frontend interfaces.  
+The project is under active development, with major components (like admin routes, dashboard, and order management) still in progress.
+
+---
+
+## 🚧 Current Project Status
+
+| Module                                | Status               | Notes                                                                |
+| ------------------------------------- | -------------------- | -------------------------------------------------------------------- |
+| 🧠 Backend (Node + Express + MongoDB) | ✅ Completed         | Authentication, product APIs, and basic order routes are functional. |
+| 🛍️ Frontend (React + Vite)            | ⚙️ In Progress       | Product pages and user UI partially implemented.                     |
+| ⚙️ Admin Panel (React + Vite)         | 🚧 Under Development | Admin routes, dashboard, and order management still pending.         |
+
+---
+
+## ✨ Key Features (Planned & Implemented)
+
+### 🌟 User Frontend
+
+- ✅ **Secure Authentication** – Register/login with JWT.
+- ✅ **Product Catalog** – Display products with categories.
+- ⚙️ **Cart & Checkout** – In progress.
+- 🚧 **Payments & Orders** – To be integrated soon.
+
+### ⚙️ Admin Dashboard
+
+- ⚙️ **Product Management** – Under development.
+- 🚧 **Order Management** – Pending.
+- 🚧 **User Management** – Planned.
+- ✅ **Admin Authentication** – Basic structure ready.
+
+---
+
+## 🛠️ Tech Stack
+`
+- **MongoDB** – NoSQL database.
+- **Express.js** – Backend API framework.
+- **React.js (Vite)** – Frontend library.
+- **Node.js** – Runtime environment.
+- **JWT** – Authentication.
+- **Stripe (planned)** – Payment integration.
+
+---
+
+## 🗂️ Folder Structure
+
+````plaintext
+/
+|-- admin/            # React.js admin frontend (WIP)
+|-- backend/          # Node.js + Express backend
+|-- frontend/         # React.js user frontend (partial)
+|-- .gitignore
+|-- README.md
+products into categories for better navigation.
 - **📑 Order Management**: View, process, and update orders efficiently.
 - **👥 User Management**: Manage user roles and access levels.
 
@@ -37,7 +93,7 @@ Welcome to the **MERN E-Commerce Website**! This project is a feature-rich e-com
 |-- frontend/         # React.js frontend code
 |-- .gitignore        # Files and folders to be ignored by Git
 |-- README.md         # Project documentation
-```
+````
 
 ## 🤸 Quick Start
 
@@ -90,7 +146,7 @@ CLOUDINARY_CLOUD_NAME =
 
 JWT_SECRET =
 
-ADMIN_EMAIL = "admin@trendify.com" #For testing only
+ADMIN_EMAIL = "admin@myStore.com" #For testing only
 
 ADMIN_PASSWORD = "admin@123" #For testing only
 
