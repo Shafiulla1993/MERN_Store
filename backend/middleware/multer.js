@@ -9,3 +9,7 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 export default upload;
+
+// hyqmpptmd
+// 954497672891476
+// 8B_w6l0iEEbuEPVWgJzgF0tB7Vm
