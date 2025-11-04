@@ -10,7 +10,7 @@ import {
 
 const router = express.Router();
 
-router.post("/", adminAuth, upload.array("images", 10), addProduct);
+router.post("/", adminAuth, upload.array("images"), addProduct);
 router.get("/", listProducts);
 router.get("/:id", getSingleProduct);
 router.delete("/:id", adminAuth, removeProduct);

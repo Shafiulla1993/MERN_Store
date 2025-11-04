@@ -1,23 +1,40 @@
 import jwt from "jsonwebtoken";
 
-const adminAuth = async (req, res, next) => {
+const adminAuth = (req, res, next) => {
   try {
-    const { token } = req.headers;
+    // ✅ Expect: Authorization: Bearer <token>
+    const authHeader = req.headers.authorization;
 
-    if (!token) {
-      return res.status(401).json({ success: false, message: "Unauthorized!" });
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res
+        .status(401)
+        .json({
+          success: false,
+          message: "Authorization token missing or invalid",
+        });
     }
 
-    const decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+    // Extract token safely
+    const token = authHeader.split(" ")[1];
 
-    if (decodedToken !== process.env.ADMIN_EMAIL + process.env.ADMIN_PASSWORD) {
-      return res.status(401).json({ success: false, message: "Unauthorized!" });
+    // Verify JWT with secret and algorithm
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, {
+      algorithms: [process.env.JWT_ALGORITHM || "HS256"],
+    });
+
+    // Validate admin email (your existing logic)
+    if (decoded.email !== process.env.ADMIN_EMAIL) {
+      return res.status(401).json({ success: false, message: "Unauthorized" });
     }
 
+    // Attach decoded data for later use
+    req.admin = decoded;
     next();
   } catch (error) {
-    console.log("Error while authenticating admin: ", error);
-    res.status(500).json({ success: false, message: error.message });
+    console.error("Auth error:", error);
+    res
+      .status(401)
+      .json({ success: false, message: "Invalid or expired token" });
   }
 };
 

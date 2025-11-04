@@ -26,18 +26,19 @@ const productSchema = new mongoose.Schema({
     required: true,
   },
   sizes: {
-    type: Array,
-    required: true,
+    type: [String],
+    default: [],
   },
   bestSeller: {
     type: Boolean,
   },
   date: {
-    type: Number,
-    required: true,
+    type: Date,
+    default: Date.now,
   },
 });
 
-const productModel = mongoose.models.product || mongoose.model("product", productSchema);
+const productModel =
+  mongoose.models.product || mongoose.model("product", productSchema);
 
 export default productModel;

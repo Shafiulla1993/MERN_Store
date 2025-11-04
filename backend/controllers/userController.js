@@ -1,112 +1,278 @@
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import validator from "validator";
 import userModel from "../models/userModel.js";
+import orderModel from "../models/orderModel.js";
 
-// INFO: Function to create token
 const createToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET);
+  return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 };
 
-// INFO: Route for user login
-const loginUser = async (req, res) => {
+// ======================
+// 🧍 Register (Sign Up)
+// ======================
+export const registerUser = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { name, email, password, mobile } = req.body;
 
-    const user = await userModel.findOne({ email });
-
-    if (!user) {
+    if (!name || !email || !password)
       return res
         .status(400)
-        .json({ success: false, message: "Invalid email or password" });
-    }
+        .json({ success: false, message: "All fields are required" });
 
-    const isPasswordCorrect = await bcrypt.compare(password, user.password);
-
-    if (isPasswordCorrect) {
-      const token = createToken(user._id);
-      res.status(200).json({ success: true, token });
-    } else {
-      res
-        .status(400)
-        .json({ success: false, message: "Invalid email or password" });
-    }
-  } catch (error) {
-    console.log("Error while logging in user: ", error);
-    res.status(500).json({ success: false, message: error.message });
-  }
-};
-
-// INFO: Route for user registration
-const registerUser = async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
-
-    // INFO: Check if user already exists
-    const userExists = await userModel.findOne({ email });
-    if (userExists) {
+    const existingUser = await userModel.findOne({ email });
+    if (existingUser)
       return res
         .status(400)
-        .json({ success: false, message: "User already exists" });
-    }
+        .json({ success: false, message: "Email already exists" });
 
-    // INFO: Validating email and password
-    if (!validator.isEmail(email)) {
-      return res.status(400).json({ success: false, message: "Invalid email" });
-    }
-    if (password.length < 8) {
-      return res.status(400).json({
-        success: false,
-        message: "Password must be at least 8 characters",
-      });
-    }
+    const hashedPassword = await bcrypt.hash(password, 12);
 
-    // INFO: Hashing user password
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    // INFO: Create new user
-    const newUser = new userModel({
+    const user = await userModel.create({
       name,
       email,
       password: hashedPassword,
+      mobile,
     });
 
-    // INFO: Save user to database
-    const user = await newUser.save();
-
-    // INFO: Create token
     const token = createToken(user._id);
 
-    // INFO: Return success response
-    res.status(200).json({ success: true, token });
+    res.status(201).json({
+      success: true,
+      message: "User registered successfully",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+      },
+    });
   } catch (error) {
-    console.log("Error while registering user: ", error);
+    console.error("Register error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-// INFO: Route for admin login
-const loginAdmin = async (req, res) => {
+// ======================
+// 🔐 Login
+// ======================
+export const loginUser = async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    if (
-      email === process.env.ADMIN_EMAIL &&
-      password === process.env.ADMIN_PASSWORD
-    ) {
-      const token = jwt.sign(email + password, process.env.JWT_SECRET);
+    if (!email || !password)
+      return res
+        .status(400)
+        .json({ success: false, message: "Email and password required" });
 
-      res.status(200).json({ success: true, token });
-    } else {
-      res
+    const user = await userModel.findOne({ email });
+    if (!user)
+      return res
         .status(400)
         .json({ success: false, message: "Invalid email or password" });
-    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch)
+      return res
+        .status(400)
+        .json({ success: false, message: "Invalid email or password" });
+
+    const token = createToken(user._id);
+
+    res.status(200).json({
+      success: true,
+      message: "Login successful",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        mobile: user.mobile,
+      },
+    });
   } catch (error) {
-    console.log("Error while logging in admin: ", error);
+    console.error("Login error:", error);
     res.status(500).json({ success: false, message: error.message });
   }
 };
 
-export { loginUser, registerUser, loginAdmin };
+// ======================
+// 👤 Get Profile
+// ======================
+export const getUserProfile = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.userId).select("-password");
+    if (!user)
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+
+    res.json({ success: true, user });
+  } catch (err) {
+    console.error("Profile fetch error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ======================
+// ✏️ Update Profile
+// ======================
+export const updateUserProfile = async (req, res) => {
+  try {
+    const { name, mobile } = req.body;
+
+    const updatedUser = await userModel
+      .findByIdAndUpdate(
+        req.userId,
+        { name, mobile },
+        { new: true, runValidators: true }
+      )
+      .select("-password");
+
+    res.json({ success: true, message: "Profile updated", user: updatedUser });
+  } catch (err) {
+    console.error("Profile update error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ======================
+// 🏠 Add Address
+// ======================
+export const addAddress = async (req, res) => {
+  try {
+    const user = await userModel.findById(req.userId);
+    user.addresses.push(req.body); // push new address
+    await user.save();
+    res.json({
+      success: true,
+      message: "Address added",
+      addresses: user.addresses,
+    });
+  } catch (err) {
+    console.error("Add address error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ======================
+// 🧾 Get User Orders
+// ======================
+export const getUserOrders = async (req, res) => {
+  try {
+    const orders = await orderModel
+      .find({ userId: req.userId })
+      .sort({ createdAt: -1 });
+    res.json({ success: true, orders });
+  } catch (err) {
+    console.error("Get orders error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ======================
+// 🛒 Get Cart
+// ======================
+export const getCart = async (req, res) => {
+  try {
+    const user = await userModel
+      .findById(req.userId)
+      .populate("cart.productId", "name price image");
+    res.json({ success: true, cart: user.cart });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ======================
+// ➕ Add to Cart
+// ======================
+export const addToCart = async (req, res) => {
+  try {
+    const { productId, quantity, size } = req.body;
+    const user = await userModel.findById(req.userId);
+
+    const existingItem = user.cart.find(
+      (item) => item.productId.toString() === productId && item.size === size
+    );
+
+    if (existingItem) {
+      existingItem.quantity += quantity;
+    } else {
+      user.cart.push({ productId, quantity, size });
+    }
+
+    await user.save();
+    const updatedUser = await user.populate(
+      "cart.productId",
+      "name price image"
+    );
+    res.json({
+      success: true,
+      message: "Cart updated",
+      cart: updatedUser.cart,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ======================
+// 📝 Update Cart Item
+// ======================
+export const updateCartItem = async (req, res) => {
+  try {
+    const { productId, quantity, size } = req.body;
+    const user = await userModel.findById(req.userId);
+
+    const item = user.cart.find(
+      (item) => item.productId.toString() === productId && item.size === size
+    );
+    if (!item)
+      return res
+        .status(404)
+        .json({ success: false, message: "Item not found" });
+
+    item.quantity = quantity;
+    await user.save();
+
+    const updatedUser = await user.populate(
+      "cart.productId",
+      "name price image"
+    );
+    res.json({
+      success: true,
+      message: "Cart updated",
+      cart: updatedUser.cart,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};
+
+// ======================
+// ❌ Remove from Cart
+// ======================
+export const removeFromCart = async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const user = await userModel.findById(req.userId);
+
+    user.cart = user.cart.filter(
+      (item) => item.productId.toString() !== productId
+    );
+
+    await user.save();
+    const updatedUser = await user.populate(
+      "cart.productId",
+      "name price image"
+    );
+    res.json({
+      success: true,
+      message: "Item removed",
+      cart: updatedUser.cart,
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, message: err.message });
+  }
+};

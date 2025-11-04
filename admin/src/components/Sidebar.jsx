@@ -9,7 +9,7 @@ const Sidebar = () => {
   return (
     <div className="w-[18%] min-h-screen border-r-2">
       <div className="flex flex-col gap-4 pt-6 pl-[20%] text-[15px]">
-        <NavLink to={"/add"} className={linkClass}>
+        <NavLink to={"/"} className={linkClass}>
           <img className="w-6 h-6" src={assets.add_icon} alt="Add Items" />
           <p className="hidden text-lg font-semibold md:block">Add Items</p>
         </NavLink>

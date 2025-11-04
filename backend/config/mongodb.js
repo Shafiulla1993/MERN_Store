@@ -8,4 +8,9 @@ const connectDB = async () => {
   await mongoose.connect(`${process.env.MONGODB_URI}`);
 };
 
+mongoose.connection.on("disconnected", () =>
+  console.log("MongoDB disconnected")
+);
+process.on("SIGINT", () => mongoose.connection.close(() => process.exit(0)));
+
 export default connectDB;

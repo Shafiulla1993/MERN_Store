@@ -1,87 +1,150 @@
-import React, { useContext, useEffect, useState } from 'react';
-import { ShopContext } from '../context/ShopContext';
-import Title from '../components/Title';
-import { assets } from '../assets/assets';
-import CartTotal from '../components/CartTotal';
+import React, { useContext, useEffect, useState } from "react";
+import { ShopContext } from "../context/ShopContext";
+import { Link } from "react-router-dom";
 
 const Cart = () => {
-  const { products, currency, cartItems, updateQuantity, navigate } = useContext(ShopContext);
-  const [cartData, setCartData] = useState([]);
+  const {
+    cartItems,
+    products,
+    currency,
+    delivery_fee,
+    getCartAmount,
+    updateQuantity,
+    getCartCount,
+    removeFromCart,
+    checkoutViaWhatsApp,
+    fetchUserCart,
+    user,
+  } = useContext(ShopContext);
 
+  const [loading, setLoading] = useState(false);
+
+  // ✅ Load cart from backend on mount (if logged in)
   useEffect(() => {
-    const tempData = [];
-    for (const items in cartItems) {
-      for (const item in cartItems[items]) {
-        if (cartItems[items][item] > 0) {
-          tempData.push({
-            _id: items,
-            size: item,
-            quantity: cartItems[items][item],
-          });
-        }
-      }
+    if (user) {
+      setLoading(true);
+      fetchUserCart().finally(() => setLoading(false));
     }
-    setCartData(tempData);
-  }, [cartItems]);
+  }, [user]);
 
-  const isCartEmpty = cartData.length === 0;
+  if (loading) return <div className="text-center py-10">Loading cart...</div>;
+
+  const cartCount = getCartCount();
+
+  if (cartCount === 0) {
+    return (
+      <div className="text-center py-20">
+        <h2 className="text-xl font-semibold mb-4">Your cart is empty 🛒</h2>
+        <Link
+          to="/"
+          className="inline-block bg-black text-white px-5 py-2 rounded-lg"
+        >
+          Continue Shopping
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className='border-t pt-14'>
-      <div className='mb-3 text-2xl'>
-        <Title text1={'YOUR'} text2={'CART'} />
-      </div>
-      <div>
-        {cartData.map((item, index) => {
-          const productData = products.find((product) => product._id === item._id);
+    <div className="max-w-5xl mx-auto px-4 py-10">
+      <h2 className="text-2xl font-semibold mb-6">Your Shopping Cart</h2>
 
-          return (
-            <div key={index} className='grid py-4 text-gray-700 border-t border-b grid-cols-[4fr_0.5fr_0.5fr] sm:grid-cols-[4fr_2fr_0.5fr] items-center gap-4'>
-              <div className='flex items-start gap-6'>
-                <img className='w-16 sm:w-20' src={productData.image[0]} alt="Photo" />
+      <div className="space-y-4">
+        {Object.entries(cartItems).map(([id, sizes]) => {
+          const product = products.find((p) => p._id === id);
+          if (!product) return null;
+
+          return Object.entries(sizes).map(([size, qty]) => (
+            <div
+              key={`${id}-${size}`}
+              className="flex items-center justify-between border-b pb-3"
+            >
+              <div className="flex items-center gap-4">
+                <img
+                  src={product.image || product.images?.[0]}
+                  alt={product.name}
+                  className="w-16 h-16 object-cover rounded-md"
+                />
                 <div>
-                  <p className='text-sm font-medium sm:text-lg'>{productData.name}</p>
-                  <div className='flex items-center gap-5 mt-2'>
-                    <p>
-                      {currency}&nbsp;{productData.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </p>
-                    <p className='px-2 border sm:px-3 sm:py-1 bg-slate-50'>{item.size}</p>
-                  </div>
+                  <h3 className="font-semibold">{product.name}</h3>
+                  <p className="text-sm text-gray-500">
+                    Size: <span className="font-medium">{size}</span>
+                  </p>
+                  <p className="text-sm">
+                    {currency}
+                    {product.price}
+                  </p>
                 </div>
               </div>
-              <input
-                onChange={(e) => e.target.value === '' || e.target.value === '0' ? null : updateQuantity(item._id, item.size, Number(e.target.value))} 
-                className='px-1 py-1 border max-w-10 sm:max-w-20 sm:px-2' 
-                type="number" 
-                min={1} 
-                defaultValue={item.quantity} 
-              />
-              <img 
-                onClick={() => updateQuantity(item._id, item.size, 0)} 
-                className='w-4 mr-4 cursor-pointer sm:w-5' 
-                src={assets.bin_icon} 
-                alt="Remove" 
-              />
+
+              <div className="flex items-center gap-3">
+                <button
+                  className="px-3 py-1 border rounded-md"
+                  onClick={() =>
+                    updateQuantity(id, size, Math.max(0, qty - 1))
+                  }
+                >
+                  -
+                </button>
+                <span>{qty}</span>
+                <button
+                  className="px-3 py-1 border rounded-md"
+                  onClick={() => updateQuantity(id, size, qty + 1)}
+                >
+                  +
+                </button>
+              </div>
+
+              <div className="text-right">
+                <p className="font-semibold">
+                  {currency}
+                  {product.price * qty}
+                </p>
+                <button
+                  onClick={() => removeFromCart(id, size)}
+                  className="text-sm text-red-500 hover:underline mt-1"
+                >
+                  Remove
+                </button>
+              </div>
             </div>
-          );
+          ));
         })}
       </div>
-      <div className='flex justify-end my-20'>
-        <div className='w-full sm:w-[450px]'>
-          <CartTotal />
-          <div className='w-full text-end'>
-            <button 
-              onClick={() => navigate('/place-order')} 
-              className={`px-8 py-3 my-8 text-sm text-white bg-black active:bg-gray-700 ${isCartEmpty ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={isCartEmpty}
-            >
-              PROCEED TO CHECKOUT
-            </button>
-          </div>
-        </div>
+
+      {/* Cart Summary */}
+      <div className="mt-10 border-t pt-6 text-right">
+        <p className="text-lg">
+          Subtotal:{" "}
+          <span className="font-semibold">
+            {currency}
+            {getCartAmount().toFixed(2)}
+          </span>
+        </p>
+        <p className="text-lg">
+          Delivery Fee:{" "}
+          <span className="font-semibold">
+            {currency}
+            {delivery_fee}
+          </span>
+        </p>
+        <p className="text-xl font-bold mt-2">
+          Total:{" "}
+          <span className="text-green-600">
+            {currency}
+            {(getCartAmount() + delivery_fee).toFixed(2)}
+          </span>
+        </p>
+
+        <button
+          onClick={checkoutViaWhatsApp}
+          className="mt-6 bg-green-500 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-600 transition"
+        >
+          Checkout via WhatsApp
+        </button>
       </div>
     </div>
   );
-}
+};
 
 export default Cart;

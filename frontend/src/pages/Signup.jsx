@@ -1,17 +1,15 @@
 import React, { useState, useContext } from "react";
-import { useLocation } from "react-router-dom";
 import { ShopContext } from "../context/ShopContext";
 
-const Login = () => {
-  const { login } = useContext(ShopContext);
+const Signup = () => {
+  const { registerUser } = useContext(ShopContext); // You'll add this in context later
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const location = useLocation();
-  const from = location.state?.from?.pathname || "/";
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
-    await login({ email, password }, from); // pass "from" path
+    await registerUser({ name, email, password });
   };
 
   return (
@@ -20,9 +18,18 @@ const Login = () => {
       className="flex flex-col items-center w-[90%] sm:max-w-96 m-auto mt-14 gap-4 text-gray-800"
     >
       <div className="inline-flex items-center gap-2 mt-10 mb-2">
-        <p className="text-3xl prata-regular">Login</p>
+        <p className="text-3xl prata-regular">Sign Up</p>
         <hr className="border-none h-[1.5px] w-8 bg-gray-800" />
       </div>
+
+      <input
+        type="text"
+        className="w-full px-3 py-2 border border-gray-800"
+        placeholder="John Doe"
+        required
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+      />
 
       <input
         type="email"
@@ -42,18 +49,14 @@ const Login = () => {
         onChange={(e) => setPassword(e.target.value)}
       />
 
-      <div className="flex justify-between w-full text-sm mt-[-8px]">
-        <p className="cursor-pointer">Forgot your password?</p>
-      </div>
-
       <button
         type="submit"
         className="px-8 py-2 mt-4 font-light text-white bg-black"
       >
-        Sign In
+        Sign Up
       </button>
     </form>
   );
 };
 
-export default Login;
+export default Signup;
